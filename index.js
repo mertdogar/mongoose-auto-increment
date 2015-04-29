@@ -62,7 +62,7 @@ exports.plugin = function (schema, options) {
 
   // Add properties for field in schema.
   fields[settings.field] = {
-    type: Number,
+    type: String,
     require: true
   };
   if (settings.field !== '_id')
@@ -131,13 +131,14 @@ exports.plugin = function (schema, options) {
         if (ready) {
           // check that a number has already been provided, and update the counter to that number if it is
           // greater than the current count
-          if (typeof doc[settings.field] === 'number') {
+          if (typeof doc[settings.field] === 'string') {
+            var base36Integer = parseInt(doc[settings.field], 36);
             IdentityCounter.findOneAndUpdate(
               // IdentityCounter documents are identified by the model and field that the plugin was invoked for.
               // Check also that count is less than field value.
-              { model: settings.model, field: settings.field, count: { $lt: doc[settings.field] } },
+              { model: settings.model, field: settings.field, count: { $lt: base36Integer } },
               // Change the count of the value found to the new field value.
-              { count: doc[settings.field] },
+              { count: base36Integer },
               function (err) {
                 if (err) return next(err);
                 // Continue with default document save functionality.
@@ -157,7 +158,7 @@ exports.plugin = function (schema, options) {
               function (err, updatedIdentityCounter) {
                 if (err) return next(err);
                 // If there are no errors then go ahead and set the document's field to the current count.
-                doc[settings.field] = updatedIdentityCounter.count;
+                doc[settings.field] = updatedIdentityCounter.count.toString(36);
                 // Continue with default document save functionality.
                 next();
               }
